@@ -1,51 +1,38 @@
 import fetch from 'node-fetch';
+import { asyncList } from './asyncList.js';
 
-export const sleep = (ms) => new Promise((resolve) => {
-  setTimeout(resolve, ms);
+export const sleep = (data) => new Promise((completed) => {
+  const endOfTimeOut = () => {
+    completed(`sleep ${data.timeOut} completed`);
+  };
+
+  setTimeout(endOfTimeOut, data.timeOut);
 });
 
-const asyncTimeout = (delay) => (
-  new Promise(
-    (resolve) => { setTimeout(() => resolve(delay), delay); },
-  )
-).then((d) => `Waited ${d} seconds`);
+const webFetch = (data) => new Promise((completed) => {
+  fetch(data.webSite)
+    .then((response) => (response.text()))
+    .then((text) => `${data.webSite} ${text}`)
+    .then(completed)
+    .catch((error) => {
+      console.log('error message', error);
+      completed();
+    });
+});
 
-const asyncFetch = (url) => fetch(url)
-  .then((response) => (response.text()))
-  .then((text) => `Fetched ${url}, and got back ${text}`);
+const a = asyncList();
+const db = 'mysql 7.22';
+const secret = { key: 2323, pass: 'myPass' };
+const array = { rows: ['one', 'two', 'three'] };
+a.store({ database: db });
+a.store(secret);
+a.store(array);
 
-function runTask(spec) {
-  return (spec.task === 'wait')
-    ? asyncTimeout(spec.duration)
-    : asyncFetch(spec.url);
-}
+console.log(a.fetchStore);
 
-const asyncThingsToDo = [
-  { task: 'wait', duration: 1000 },
-  { task: 'fetch', url: 'https://httpstat.us/200' },
-  { task: 'wait', duration: 4000 },
-  { task: 'fetch', url: 'https://urlecho.appspot.com/echo?body=Awesome!' },
-];
-
-const runInParallel = async () => {
-  const tasks = asyncThingsToDo.map(runTask); // Run all our tasks in parallel.
-  const results = await Promise.all(tasks); // Gather up the results.
-  results.forEach((x) => console.log(x)); // Print them out on the console.
-  console.log('-- parallel end -- ');
-};
-
-const runInSequence = async () => {
-  const starterPromise = Promise.resolve(null);
-  const log = (result) => console.log(result);
-
-  await asyncThingsToDo.reduce(
-    (p, spec) => p.then(() => runTask(spec).then(log)),
-    starterPromise,
-  );
-
-  console.log('-- sequence end -- ');
-};
-
-// https://jrsinclair.com/articles/2019/how-to-run-async-js-in-parallel-or-sequential/
-runInSequence();
-runInParallel();
+a.add(sleep, { timeOut: 3000 });
+a.add(webFetch, { webSite: 'https://httpstat.us/200', database: db });
+a.add(sleep, { timeOut: 2000 });
+a.add(sleep, { timeOut: 1000 });
+a.add(webFetch, { webSite: 'https://urlecho.appspot.com/echo?body=Awesome!' });
+a.run();
