@@ -34,5 +34,5 @@ a.add(sleep, { timeOut: 3000 });
 a.add(webFetch, { webSite: 'https://httpstat.us/200', database: db });
 a.add(sleep, { timeOut: 2000 });
 a.add(sleep, { timeOut: 1000 });
-a.add(webFetch, { webSite: 'https://urlecho.appspot.com/echo?body=Awesome!' });
+a.add(webFetch, { webSite: 'https://urlecho.appspot.com/echo?body=expected' });
 a.run();
